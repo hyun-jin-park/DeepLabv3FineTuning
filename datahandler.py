@@ -4,13 +4,14 @@ import os
 import numpy as np
 import cv2
 import torch
+import json
 from torchvision import transforms, utils
 
 
 class SegDataset(Dataset):
     """Segmentation Dataset"""
 
-    def __init__(self, root_dir, imageFolder, maskFolder, transform=None, seed=None, fraction=None, subset=None, imagecolormode='rgb', maskcolormode='grayscale'):
+    def __init__(self, root_dir, imageFolder, maskFolder, transform=None, seed=None, fraction=None, subset=None, imagecolormode='rgb', maskcolormode='rgb'):
         """
         Args:
             root_dir (string): Directory with all the images and should have the following structure.
@@ -35,9 +36,12 @@ class SegDataset(Dataset):
         assert(maskcolormode in ['rgb', 'grayscale'])
 
         self.imagecolorflag = self.color_dict[imagecolormode]
-        self.maskcolorflag = self.color_dict[maskcolormode]
+        # self.maskcolorflag = self.color_dict[maskcolormode]
         self.root_dir = root_dir
         self.transform = transform
+        self.mask_definitions = {}
+        self.number_of_class = self.load_mask_definition()
+
         if not fraction:
             self.image_names = sorted(
                 glob.glob(os.path.join(self.root_dir, imageFolder, '*')))
@@ -48,24 +52,24 @@ class SegDataset(Dataset):
             self.fraction = fraction
             self.image_list = np.array(
                 sorted(glob.glob(os.path.join(self.root_dir, imageFolder, '*'))))
-            self.mask_list = np.array(
-                sorted(glob.glob(os.path.join(self.root_dir, maskFolder, '*'))))
+            # self.mask_list = np.array(
+            #     sorted(glob.glob(os.path.join(self.root_dir, maskFolder, '*'))))
             if seed:
                 np.random.seed(seed)
                 indices = np.arange(len(self.image_list))
                 np.random.shuffle(indices)
                 self.image_list = self.image_list[indices]
-                self.mask_list = self.mask_list[indices]
+                # self.mask_list = self.mask_list[indices]
             if subset == 'Train':
                 self.image_names = self.image_list[:int(
-                    np.ceil(len(self.image_list)*(1-self.fraction)))]
-                self.mask_names = self.mask_list[:int(
-                    np.ceil(len(self.mask_list)*(1-self.fraction)))]
+                    np.ceil(len(self.image_list)*self.fraction))]
+                # self.mask_names = self.mask_list[:int(
+                #     np.ceil(len(self.mask_list)*(1-self.fraction)))]
             else:
                 self.image_names = self.image_list[int(
                     np.ceil(len(self.image_list)*(1-self.fraction))):]
-                self.mask_names = self.mask_list[int(
-                    np.ceil(len(self.mask_list)*(1-self.fraction))):]
+                # self.mask_names = self.mask_list[int(
+                #     np.ceil(len(self.mask_list)*(1-self.fraction))):]
 
     def __len__(self):
         return len(self.image_names)
@@ -77,11 +81,17 @@ class SegDataset(Dataset):
                 img_name, self.imagecolorflag).transpose(2, 0, 1)
         else:
             image = cv2.imread(img_name, self.imagecolorflag)
-        msk_name = self.mask_names[idx]
-        if self.maskcolorflag:
-            mask = cv2.imread(msk_name, self.maskcolorflag).transpose(2, 0, 1)
-        else:
-            mask = cv2.imread(msk_name, self.maskcolorflag)
+        # msk_name = self.mask_names[idx]
+        msk_name = img_name.replace('original', 'mask').replace('rgb', 'segmentation')
+
+        # if self.maskcolorflag:
+        #     mask = cv2.imread(msk_name, self.maskcolorflag).transpose(2, 0, 1)
+        # else:
+        #     png = cv2.imread(msk_name, self.maskcolorflag)
+        #     mask = self.png_to_mask(png)
+
+        png = cv2.imread(msk_name)
+        mask = self.png_to_mask(png)
         sample = {'image': image, 'mask': mask}
 
         if self.transform:
@@ -89,6 +99,28 @@ class SegDataset(Dataset):
 
         return sample
 
+    def png_to_mask(self, mask_image):
+        base = None
+        for key, value in self.mask_definitions.items():
+            mask = np.zeros(shape=(mask_image.shape[:2]))
+            mask[np.all(np.abs(mask_image - value) < 2, axis=-1)] = 1
+            mask = np.expand_dims(mask, axis=0)
+            if base is None:
+                base = mask
+            else:
+                base = np.concatenate((base, mask), axis=0)
+        return base
+
+    def load_mask_definition(self):
+        mask_definition_json = json.load(open(os.path.join(self.root_dir, 'json/annotation_definitions.json'), 'r'))
+        for spec in mask_definition_json['annotation_definitions'][1]['spec']:
+            label_name = spec['label_name']
+            r = round(spec['pixel_value']['r'] * 255)
+            g = round(spec['pixel_value']['g'] * 255)
+            b = round(spec['pixel_value']['b'] * 255)
+            rgb = np.array([b, g, r], dtype=np.int64)
+            self.mask_definitions[label_name] = rgb
+        return len(self.mask_definitions)
 # Define few transformations for the Segmentation Dataloader
 
 
@@ -184,6 +216,6 @@ def get_dataloader_single_folder(data_dir, imageFolder='Images', maskFolder='Mas
     image_datasets = {x: SegDataset(data_dir, imageFolder=imageFolder, maskFolder=maskFolder, seed=100, fraction=fraction, subset=x, transform=data_transforms[x])
                       for x in ['Train', 'Test']}
     dataloaders = {x: DataLoader(image_datasets[x], batch_size=batch_size,
-                                 shuffle=True, num_workers=8)
+                                 shuffle=True, num_workers=0)
                    for x in ['Train', 'Test']}
     return dataloaders

@@ -16,11 +16,11 @@ import torch
 # Command line arguments 
 parser = argparse.ArgumentParser()
 parser.add_argument(
-    "data_directory", help='Specify the dataset directory path')
+    "--data_directory", default='./data/', type=str)
 parser.add_argument(
-    "exp_directory", help='Specify the experiment directory where metrics and model weights shall be stored.')
+    "--exp_directory", default='./out/', type=str)
 parser.add_argument("--epochs", default=25, type=int)
-parser.add_argument("--batchsize", default=4, type=int)
+parser.add_argument("--batchsize", default=2, type=int)
 
 args = parser.parse_args()
 
@@ -30,7 +30,7 @@ data_dir = args.data_directory
 epochs = args.epochs
 batchsize = args.batchsize
 # Create the deeplabv3 resnet101 model which is pretrained on a subset of COCO train2017, on the 20 categories that are present in the Pascal VOC dataset.
-model = createDeepLabv3()
+model = createDeepLabv3(outputchannels=11)
 model.train()
 # Create the experiment directory if not present
 if not os.path.isdir(bpath):
@@ -48,7 +48,7 @@ metrics = {'f1_score': f1_score, 'auroc': roc_auc_score}
 
 # Create the dataloader
 dataloaders = datahandler.get_dataloader_single_folder(
-    data_dir, batch_size=batchsize)
+    data_dir, imageFolder='original', maskFolder='mask' , batch_size=batchsize, fraction=0.8)
 trained_model = train_model(model, criterion, dataloaders,
                             optimizer, bpath=bpath, metrics=metrics, num_epochs=epochs)
 
