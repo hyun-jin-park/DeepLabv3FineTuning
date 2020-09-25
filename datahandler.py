@@ -215,7 +215,7 @@ def get_dataloader_sep_folder(data_dir, imageFolder='Image', maskFolder='Mask', 
     return dataloaders
 
 
-def get_dataloader_single_folder(data_dir, imageFolder='Images', maskFolder='Masks', fraction=0.2, batch_size=4):
+def get_dataloader_single_folder(data_dir, imageFolder='Images', maskFolder='Masks', fraction=0.2, batch_size=4, num_worker=0):
     """
         Create training and testing dataloaders from a single folder.
     """
@@ -227,6 +227,6 @@ def get_dataloader_single_folder(data_dir, imageFolder='Images', maskFolder='Mas
     image_datasets = {x: SegDataset(data_dir, imageFolder=imageFolder, maskFolder=maskFolder, seed=100, fraction=fraction, subset=x, transform=data_transforms[x])
                       for x in ['Train', 'Test']}
     dataloaders = {x: DataLoader(image_datasets[x], batch_size=batch_size,
-                                 shuffle=True, num_workers=20)
+                                 shuffle=True, num_workers=num_worker)
                    for x in ['Train', 'Test']}
     return dataloaders

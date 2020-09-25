@@ -21,7 +21,7 @@ parser.add_argument(
 parser.add_argument(
     "--exp_directory", default='./out/', type=str)
 parser.add_argument("--epochs", default=25, type=int)
-parser.add_argument("--batchsize", default=24, type=int)
+parser.add_argument("--batchsize", default=2, type=int)
 
 args = parser.parse_args()
 
@@ -42,7 +42,7 @@ if not os.path.isdir(bpath):
 
 # Specify the loss function
 # criterion = torch.nn.CrossEntropyLoss(reduction='mean')
-criterion2 = FocalLoss(size_average=True)
+criterion = FocalLoss(size_average=True)
 
 
 # Specify the optimizer with a lower learning rate
@@ -55,7 +55,7 @@ metrics = {'f1_score': f1_score}
 
 # Create the dataloader
 dataloaders = datahandler.get_dataloader_single_folder(
-    data_dir, imageFolder='original', maskFolder='mask' , batch_size=batchsize, fraction=0.8)
+    data_dir, imageFolder='original', maskFolder='mask' , batch_size=batchsize, fraction=0.8, num_worker=20)
 trained_model = train_model(model, criterion, dataloaders,
                             optimizer, bpath=bpath, metrics=metrics, num_epochs=epochs)
 
