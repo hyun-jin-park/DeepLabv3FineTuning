@@ -38,8 +38,7 @@ def train_model(model, criterion, dataloaders, optimizer, metrics, bpath, num_ep
             # Iterate over data.
             for step, sample in tqdm(enumerate(iter(dataloaders[phase]))):
                 inputs = sample['image'].to(device)
-                masks = sample['mask'].to(device)
-
+                masks = sample['mask'].to(device).squeeze()
 
                 # zero the parameter gradients
                 optimizer.zero_grad()
@@ -47,15 +46,15 @@ def train_model(model, criterion, dataloaders, optimizer, metrics, bpath, num_ep
                 # track history if only in train
                 with torch.set_grad_enabled(phase == 'Train'):
                     outputs = model(inputs)['out']
-                    # outputs = torch.argmax(outputs, dim=1)
-                    loss = criterion(outputs, torch.argmax(masks, dim=1))
+                    loss = criterion(outputs, masks)
                     if step % 30 == 1:
+                        outputs = torch.argmax(outputs, dim=1)
                         y_pred = outputs.data.cpu().numpy().ravel()
                         y_true = masks.data.cpu().numpy().ravel()
                         for name, metric in metrics.items():
                             if name == 'f1_score':
                             # Use a classification threshold of 0.1
-                                batchsummary[f'{phase}_{name}'].append(metric(y_true > 0, y_pred > 0.1))
+                                batchsummary[f'{phase}_{name}'].append(metric(y_true, y_pred))
                             else:
                                 batchsummary[f'{phase}_{name}'].append(metric(y_true.astype('uint8'), y_pred))
 

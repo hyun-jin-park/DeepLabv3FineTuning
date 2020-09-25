@@ -111,16 +111,11 @@ class SegDataset(Dataset):
         return sample
 
     def png_to_mask(self, mask_image):
-        base = None
-        for key, value in self.mask_definitions.items():
-            mask = np.zeros(shape=(mask_image.shape[:2]))
-            mask[np.all(np.abs(mask_image - value) < 2, axis=-1)] = 255 
-            mask = np.expand_dims(mask, axis=0)
-            if base is None:
-                base = mask
-            else:
-                base = np.concatenate((base, mask), axis=0)
-        return base
+        mask = np.zeros(shape=(mask_image.shape[:2]), dtype=np.long)
+        for index, key in enumerate(self.mask_definitions.keys()):
+            value = self.mask_definitions[key]
+            mask[np.all(np.abs(mask_image - value) < 2, axis=-1)] = index + 1
+        return mask
 
     def load_mask_definition(self):
         mask_definition_json = json.load(open(os.path.join(self.root_dir, 'json/annotation_definitions.json'), 'r'))
@@ -177,8 +172,9 @@ class Normalize(object):
 
     def __call__(self, sample):
         image, mask = sample['image'], sample['mask']
-        return {'image': image.type(torch.FloatTensor)/255,
-                'mask': mask.type(torch.FloatTensor)/255}
+        return {'image': image.type(torch.FloatTensor)/255, 'mask': mask.type(torch.long)}
+        # return {'image': image.type(torch.FloatTensor)/255,
+        #         'mask': mask.type(torch.FloatTensor)/255}
 
 
 def get_dataloader_sep_folder(data_dir, imageFolder='Image', maskFolder='Mask', batch_size=4):

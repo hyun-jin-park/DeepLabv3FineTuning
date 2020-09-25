@@ -22,6 +22,7 @@ parser.add_argument(
     "--exp_directory", default='./out/', type=str)
 parser.add_argument("--epochs", default=25, type=int)
 parser.add_argument("--batchsize", default=2, type=int)
+parser.add_argument("--num_workers", default=0, type=int)
 
 args = parser.parse_args()
 
@@ -31,7 +32,7 @@ data_dir = args.data_directory
 epochs = args.epochs
 batchsize = args.batchsize
 # Create the deeplabv3 resnet101 model which is pretrained on a subset of COCO train2017, on the 20 categories that are present in the Pascal VOC dataset.
-model = createDeepLabv3(outputchannels=11)
+model = createDeepLabv3(outputchannels=12)
 model = torch.nn.DataParallel(model)
 model.train()
 
@@ -55,7 +56,7 @@ metrics = {'f1_score': f1_score}
 
 # Create the dataloader
 dataloaders = datahandler.get_dataloader_single_folder(
-    data_dir, imageFolder='original', maskFolder='mask' , batch_size=batchsize, fraction=0.8, num_worker=20)
+    data_dir, imageFolder='original', maskFolder='mask' , batch_size=batchsize, fraction=0.8, num_worker=args.num_workers)
 trained_model = train_model(model, criterion, dataloaders,
                             optimizer, bpath=bpath, metrics=metrics, num_epochs=epochs)
 
