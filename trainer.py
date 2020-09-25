@@ -36,7 +36,7 @@ def train_model(model, criterion, dataloaders, optimizer, metrics, bpath, num_ep
                 model.eval()   # Set model to evaluate mode
 
             # Iterate over data.
-            for sample in tqdm(iter(dataloaders[phase])):
+            for step, sample in tqdm(enumerate(iter(dataloaders[phase]))):
                 inputs = sample['image'].to(device)
                 masks = sample['mask'].to(device)
                 # zero the parameter gradients
@@ -46,16 +46,15 @@ def train_model(model, criterion, dataloaders, optimizer, metrics, bpath, num_ep
                 with torch.set_grad_enabled(phase == 'Train'):
                     outputs = model(inputs)
                     loss = criterion(outputs['out'], masks)
-                    y_pred = outputs['out'].data.cpu().numpy().ravel()
-                    y_true = masks.data.cpu().numpy().ravel()
-                    for name, metric in metrics.items():
-                        if name == 'f1_score':
+                    if step % 30 == 1:
+                        y_pred = outputs['out'].data.cpu().numpy().ravel()
+                        y_true = masks.data.cpu().numpy().ravel()
+                        for name, metric in metrics.items():
+                            if name == 'f1_score':
                             # Use a classification threshold of 0.1
-                            batchsummary[f'{phase}_{name}'].append(
-                                metric(y_true > 0, y_pred > 0.1))
-                        else:
-                            batchsummary[f'{phase}_{name}'].append(
-                                metric(y_true.astype('uint8'), y_pred))
+                                batchsummary[f'{phase}_{name}'].append(metric(y_true > 0, y_pred > 0.1))
+                            else:
+                                batchsummary[f'{phase}_{name}'].append(metric(y_true.astype('uint8'), y_pred))
 
                     # backward + optimize only if in training phase
                     if phase == 'Train':

@@ -77,10 +77,15 @@ class SegDataset(Dataset):
     def __getitem__(self, idx):
         img_name = self.image_names[idx]
         if self.imagecolorflag:
+#            image = cv2.imread(
+#                img_name, self.imagecolorflag).transpose(2, 0, 1)
             image = cv2.imread(
-                img_name, self.imagecolorflag).transpose(2, 0, 1)
+                img_name, self.imagecolorflag)
         else:
             image = cv2.imread(img_name, self.imagecolorflag)
+
+        image = cv2.resize(image, dsize=(480, 320), interpolation=cv2.INTER_AREA)
+        image = np.transpose(image, (2, 0, 1))
         # msk_name = self.mask_names[idx]
         msk_name = img_name.replace('original', 'mask').replace('rgb', 'segmentation')
 
@@ -90,8 +95,16 @@ class SegDataset(Dataset):
         #     png = cv2.imread(msk_name, self.maskcolorflag)
         #     mask = self.png_to_mask(png)
 
-        png = cv2.imread(msk_name)
-        mask = self.png_to_mask(png)
+        try: 
+            png = cv2.imread(msk_name)
+            png = cv2.resize(png, dsize=(480,320), interpolation=cv2.INTER_NEAREST)
+            mask = self.png_to_mask(png)
+        except Exception as e:
+            print(f'error mask file name is : {msk_name}')
+            print(str(e))
+            raise
+
+
         sample = {'image': image, 'mask': mask}
 
         if self.transform:
@@ -103,7 +116,7 @@ class SegDataset(Dataset):
         base = None
         for key, value in self.mask_definitions.items():
             mask = np.zeros(shape=(mask_image.shape[:2]))
-            mask[np.all(np.abs(mask_image - value) < 2, axis=-1)] = 1
+            mask[np.all(np.abs(mask_image - value) < 2, axis=-1)] = 255 
             mask = np.expand_dims(mask, axis=0)
             if base is None:
                 base = mask
@@ -199,7 +212,7 @@ def get_dataloader_sep_folder(data_dir, imageFolder='Image', maskFolder='Mask', 
                                     transform=data_transforms[x], maskFolder=maskFolder, imageFolder=imageFolder)
                       for x in ['Train', 'Test']}
     dataloaders = {x: DataLoader(image_datasets[x], batch_size=batch_size,
-                                 shuffle=True, num_workers=8)
+                                 shuffle=True, num_workers=20)
                    for x in ['Train', 'Test']}
     return dataloaders
 
@@ -216,6 +229,6 @@ def get_dataloader_single_folder(data_dir, imageFolder='Images', maskFolder='Mas
     image_datasets = {x: SegDataset(data_dir, imageFolder=imageFolder, maskFolder=maskFolder, seed=100, fraction=fraction, subset=x, transform=data_transforms[x])
                       for x in ['Train', 'Test']}
     dataloaders = {x: DataLoader(image_datasets[x], batch_size=batch_size,
-                                 shuffle=True, num_workers=0)
+                                 shuffle=True, num_workers=20)
                    for x in ['Train', 'Test']}
     return dataloaders
