@@ -83,7 +83,6 @@ class SegDataset(Dataset):
                 img_name, self.imagecolorflag)
         else:
             image = cv2.imread(img_name, self.imagecolorflag)
-
         image = cv2.resize(image, dsize=(480, 320), interpolation=cv2.INTER_AREA)
         image = np.transpose(image, (2, 0, 1))
         # msk_name = self.mask_names[idx]
@@ -103,7 +102,6 @@ class SegDataset(Dataset):
             print(f'error mask file name is : {msk_name}')
             print(str(e))
             raise
-
 
         sample = {'image': image, 'mask': mask}
 

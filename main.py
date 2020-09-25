@@ -1,5 +1,6 @@
 import torch.optim as optim
 from sklearn.metrics import roc_auc_score, f1_score
+from loss import FocalLoss
 from model import createDeepLabv3
 from trainer import train_model
 import datahandler
@@ -33,13 +34,17 @@ batchsize = args.batchsize
 model = createDeepLabv3(outputchannels=11)
 model = torch.nn.DataParallel(model)
 model.train()
+
 # Create the experiment directory if not present
 if not os.path.isdir(bpath):
     os.mkdir(bpath)
 
 
 # Specify the loss function
-criterion = torch.nn.MSELoss(reduction='mean')
+# criterion = torch.nn.CrossEntropyLoss(reduction='mean')
+criterion2 = FocalLoss(size_average=True)
+
+
 # Specify the optimizer with a lower learning rate
 optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
 
