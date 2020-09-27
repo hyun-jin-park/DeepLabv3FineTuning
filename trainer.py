@@ -7,13 +7,10 @@ import numpy as np
 import os
 
 
-def train_model(model, criterion, dataloaders, optimizer, metrics, bpath, num_epochs=3):
+def train_model(model, criterion, dataloaders, optimizer, lr_scheduler, metrics, bpath, num_epochs=3):
     since = time.time()
     best_model_wts = copy.deepcopy(model.state_dict())
     best_loss = 1e10
-    # Use gpu if available
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    model.to(device)
     # Initialize the log file for training and testing loss and metrics
     fieldnames = ['epoch', 'Train_loss', 'Test_loss'] + \
         [f'Train_{m}' for m in metrics.keys()] + \
@@ -37,8 +34,10 @@ def train_model(model, criterion, dataloaders, optimizer, metrics, bpath, num_ep
 
             # Iterate over data.
             for step, sample in tqdm(enumerate(iter(dataloaders[phase]))):
-                inputs = sample['image'].to(device)
-                masks = sample['mask'].to(device).squeeze()
+                inputs = sample['image'].cuda()
+                masks = sample['mask'].cuda().squeeze()
+                print(inputs.shape)
+                print(masks.shape)
 
                 # zero the parameter gradients
                 optimizer.zero_grad()
@@ -56,12 +55,14 @@ def train_model(model, criterion, dataloaders, optimizer, metrics, bpath, num_ep
                             # Use a classification threshold of 0.1
                                 batchsummary[f'{phase}_{name}'].append(metric(y_true, y_pred, average='micro'))
                             else:
-                                batchsummary[f'{phase}_{name}'].append(metric(y_true.astype('uint8'), y_pred))
+                                batchsummary[f'{phase}_{name}'].append(metric(y_true.astype('uint8'), y_pred, average='micro'))
 
                     # backward + optimize only if in training phase
                     if phase == 'Train':
                         loss.backward()
                         optimizer.step()
+                        #lr_scheduler.step()
+
             batchsummary['epoch'] = epoch
             epoch_loss = loss
             batchsummary[f'{phase}_loss'] = epoch_loss.item()

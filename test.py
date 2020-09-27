@@ -21,7 +21,7 @@ args = parser.parse_args()
 if not os.path.isdir(args.result_directory):
     os.mkdir(args.result_directory)
 
-model = createDeepLabv3(outputchannels=11, pretrain=True)
+model = createDeepLabv3(outputchannels=12, pretrain=True)
 # model = torch.nn.DataParallel(model)
 train_model = torch.load(args.model_path)
 trained_state_dict = copy_state_dict(train_model.state_dict())
