@@ -57,8 +57,13 @@ metrics = {'f1_score': f1_score}
 # Create the dataloader
 dataloaders = datahandler.get_dataloader_single_folder(
     data_dir, imageFolder='original', maskFolder='mask' , batch_size=batchsize, fraction=0.8, num_worker=args.num_workers)
+
+lr_scheduler = torch.optim.lr_scheduler.LambdaLR(
+        optimizer,
+        lambda x: (1 - x / (len(dataloaders) * args.epochs)) ** 0.9)
+
 trained_model = train_model(model, criterion, dataloaders,
-                            optimizer, bpath=bpath, metrics=metrics, num_epochs=epochs)
+                            optimizer, lr_scheduler, bpath=bpath, metrics=metrics, num_epochs=epochs)
 
 
 # Save the trained model

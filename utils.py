@@ -40,7 +40,7 @@ def segmentation_to_masks(mask_definitions, gt_path, size=(500, 600), show=False
 def masks_to_segmentation(mask_definitions, masks, threshold=0.1, show=False):
     (channel, height, width) = np.shape(masks)
     segmentation_im = np.zeros((height, width, 3), dtype=np.uint8)
-    for mask, label_name in zip(masks, mask_definitions.keys()):
+    for mask, label_name in zip(masks[1:], mask_definitions.keys()):
         if label_name in ['Card_Background', 'KOR', 'Person_Image']:
             rgb = mask_definitions[label_name]
             indices = mask > threshold
