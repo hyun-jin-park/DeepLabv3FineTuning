@@ -177,7 +177,7 @@ class Normalize(object):
         #         'mask': mask.type(torch.FloatTensor)/255}
 
 
-def get_dataloader_sep_folder(data_dir, imageFolder='Image', maskFolder='Mask', batch_size=4):
+def get_dataloader_sep_folder(data_dir, imageFolder='Image', maskFolder='Mask', batch_size=4, num_workers=0):
     """
         Create Train and Test dataloaders from two separate Train and Test folders.
         The directory structure should be as follows.
@@ -206,12 +206,12 @@ def get_dataloader_sep_folder(data_dir, imageFolder='Image', maskFolder='Mask', 
                                     transform=data_transforms[x], maskFolder=maskFolder, imageFolder=imageFolder)
                       for x in ['Train', 'Test']}
     dataloaders = {x: DataLoader(image_datasets[x], batch_size=batch_size,
-                                 shuffle=True, num_workers=20)
+                                 shuffle=True, num_workers=num_workers)
                    for x in ['Train', 'Test']}
     return dataloaders
 
 
-def get_dataloader_single_folder(data_dir, imageFolder='Images', maskFolder='Masks', fraction=0.2, batch_size=4, num_worker=0):
+def get_dataloader_single_folder(data_dir, imageFolder='Images', maskFolder='Masks', fraction=0.2, batch_size=4, num_workers=0):
     """
         Create training and testing dataloaders from a single folder.
     """
@@ -223,6 +223,6 @@ def get_dataloader_single_folder(data_dir, imageFolder='Images', maskFolder='Mas
     image_datasets = {x: SegDataset(data_dir, imageFolder=imageFolder, maskFolder=maskFolder, seed=100, fraction=fraction, subset=x, transform=data_transforms[x])
                       for x in ['Train', 'Test']}
     dataloaders = {x: DataLoader(image_datasets[x], batch_size=batch_size,
-                                 shuffle=True, num_workers=num_worker)
+                                 shuffle=True, num_workers=num_workers)
                    for x in ['Train', 'Test']}
     return dataloaders

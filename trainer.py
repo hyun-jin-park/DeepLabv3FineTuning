@@ -54,7 +54,7 @@ def train_model(model, criterion, dataloaders, optimizer, metrics, bpath, num_ep
                         for name, metric in metrics.items():
                             if name == 'f1_score':
                             # Use a classification threshold of 0.1
-                                batchsummary[f'{phase}_{name}'].append(metric(y_true, y_pred))
+                                batchsummary[f'{phase}_{name}'].append(metric(y_true, y_pred, average='micro'))
                             else:
                                 batchsummary[f'{phase}_{name}'].append(metric(y_true.astype('uint8'), y_pred))
 

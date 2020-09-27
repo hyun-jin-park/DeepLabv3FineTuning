@@ -21,8 +21,8 @@ parser.add_argument(
 parser.add_argument(
     "--exp_directory", default='./out/', type=str)
 parser.add_argument("--epochs", default=25, type=int)
-parser.add_argument("--batchsize", default=2, type=int)
-parser.add_argument("--num_workers", default=0, type=int)
+parser.add_argument("--batchsize", default=24, type=int)
+parser.add_argument("--num_workers", default=20, type=int)
 
 args = parser.parse_args()
 
@@ -47,7 +47,7 @@ criterion = FocalLoss(size_average=True)
 
 
 # Specify the optimizer with a lower learning rate
-optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
+optimizer = torch.optim.Adam(model.parameters(), lr=2e-2)
 
 # Specify the evalutation metrics
 #metrics = {'f1_score': f1_score, 'auroc': roc_auc_score}
@@ -55,8 +55,8 @@ metrics = {'f1_score': f1_score}
 
 
 # Create the dataloader
-dataloaders = datahandler.get_dataloader_single_folder(
-    data_dir, imageFolder='original', maskFolder='mask' , batch_size=batchsize, fraction=0.8, num_worker=args.num_workers)
+dataloaders = datahandler.get_dataloader_sep_folder(
+    data_dir, imageFolder='original', maskFolder='mask' , batch_size=batchsize, num_workers=args.num_workers)
 trained_model = train_model(model, criterion, dataloaders,
                             optimizer, bpath=bpath, metrics=metrics, num_epochs=epochs)
 
